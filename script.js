@@ -16,6 +16,9 @@ var btnLogin = $("#btnLogin");
 var btnSignUp = $("#btnSignUp");
 var btnLogout = $("#btnLogout");
 
+var uploader = $("#uploader");
+var fileButton = $("#fileButton");
+
 // Log in event
 $(btnLogin).click(function () {
     console.log('btn clicked');
@@ -54,33 +57,76 @@ $(btnLogout).click(function () {
     firebase.auth().signOut();
 });
 
-
 // Real-time listener
 firebase.auth().onAuthStateChanged(function (firebaseUser) {
     if (firebaseUser) {
         $('#statusMsg').text('User logged in: ' + firebaseUser.email);
         console.log('firebaseUser is : ', firebaseUser);
         showLoginElems(false);
+        showUploadElems(true);
     } else {
         $('#statusMsg').text('Please Log in');
         console.log('Not logged in');
         showLoginElems(true);
+        showUploadElems(false);
     }
 });
 
 // Toggle Login elements
 function showLoginElems(showLoginFlag) {
-    if (showLoginFlag) {
-        $('#inputEmail').show();
-        $('#inputPassword').show();
-        $('#btnLogin').show();
-        $('#btnSignUp').show();
-        $('#btnLogout').hide();
+    if(showLoginFlag){
+        $(txtEmail).show();
+        $(txtPassword).show();
+        $(btnLogin).show();
+        $(btnSignUp).show();
+        $(btnLogout).hide();
     } else {
-        $('#inputEmail').hide();
-        $('#inputPassword').hide();
-        $('#btnLogin').hide();
-        $('#btnSignUp').hide();
-        $('#btnLogout').show();
+        $(txtEmail).hide();
+        $(txtPassword).hide();
+        $(btnLogin).hide();
+        $(btnSignUp).hide();
+        $(btnLogout).show();
     }
+
 }
+
+// Toggle Upload elements
+function showUploadElems (showUploadFlag){
+        if(showUploadFlag){
+            $(uploader).show();
+            $(fileButton).show();
+        } else {
+            $(uploader).hide();
+            $(fileButton).hide();
+        }
+}
+
+// Listen for file selection
+$(fileButton).change(function(e){
+    // Get file
+    var file = e.target.files[0];
+
+    // Create a storage ref
+    var storageRef = firebase.storage().ref('images/' + file.name);
+
+    // Upload file
+    var task = storageRef.put(file);
+
+    // Update the progress bar
+    task.on('state_changed',
+        function progress(snapshot){
+        console.log('snapshot is: ', snapshot);
+            var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            uploader.val(percentage);
+        },
+
+        function error(err){
+
+        },
+
+        function complete(){
+
+        }
+
+        )
+});

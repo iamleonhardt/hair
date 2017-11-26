@@ -2,10 +2,6 @@ body {
     font-family: Roboto, Arial, sans-serif;
 }
 
-input {
-     margin: 0 0 6px 0;
- }
-
- div {
+input, div {
      margin: 6px 0;
  }
