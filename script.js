@@ -1,3 +1,8 @@
+// Global Vars
+var file;
+var user;
+
+
 // Initialize Firebase
 var config = {
     apiKey: "AIzaSyAcy8K3wtS-Qa0WS2VPNzd9hSEeNtCB57Q",
@@ -8,6 +13,8 @@ var config = {
     messagingSenderId: "242280081716"
 };
 firebase.initializeApp(config);
+var database = firebase.database();
+var storage = firebase.storage();
 
 // HTML elements
 var txtEmail = $("#inputEmail");
@@ -16,8 +23,10 @@ var btnLogin = $("#btnLogin");
 var btnSignUp = $("#btnSignUp");
 var btnLogout = $("#btnLogout");
 
-var uploader = $("#uploader");
+var uploadElems = $("#uploadsContainer");
+var newCutButton = $("#newCutButton");
 var fileButton = $("#fileButton");
+var image = $("#image");
 
 // Log in event
 $(btnLogin).click(function () {
@@ -47,6 +56,13 @@ $(btnSignUp).click(function () {
     // Sign in
     var promise = auth.createUserWithEmailAndPassword(email, password);
     promise
+        .then(function(firebaseUser){
+            console.log('signed up and user is : ', firebaseUser);
+            var userIDRef = database.ref('users/' + firebaseUser.uid)
+            userIDRef.set({
+                email: firebaseUser.email
+            })
+        })
         .catch(function (e) {
             console.log(e.message);
         })
@@ -62,6 +78,7 @@ firebase.auth().onAuthStateChanged(function (firebaseUser) {
     if (firebaseUser) {
         $('#statusMsg').text('User logged in: ' + firebaseUser.email);
         console.log('firebaseUser is : ', firebaseUser);
+        user = firebaseUser;
         showLoginElems(false);
         showUploadElems(true);
     } else {
@@ -69,12 +86,13 @@ firebase.auth().onAuthStateChanged(function (firebaseUser) {
         console.log('Not logged in');
         showLoginElems(true);
         showUploadElems(false);
+        user = null;
     }
 });
 
 // Toggle Login elements
 function showLoginElems(showLoginFlag) {
-    if(showLoginFlag){
+    if (showLoginFlag) {
         $(txtEmail).show();
         $(txtPassword).show();
         $(btnLogin).show();
@@ -87,46 +105,57 @@ function showLoginElems(showLoginFlag) {
         $(btnSignUp).hide();
         $(btnLogout).show();
     }
-
 }
 
 // Toggle Upload elements
-function showUploadElems (showUploadFlag){
-        if(showUploadFlag){
-            $(uploader).show();
-            $(fileButton).show();
-        } else {
-            $(uploader).hide();
-            $(fileButton).hide();
-        }
+function showUploadElems(showUploadFlag) {
+    if (showUploadFlag) {
+        $(uploadElems).show();
+    } else {
+        $(uploadElems).hide();
+    }
 }
 
+// Create new cut entry
+$(newCutButton).click(function(){
+    console.log('new cut clicked');
+    var cutsRef = database.ref('users/' + user.uid + '/cuts');
+    cutsRef.push().set({images:'test'})
+});
+
 // Listen for file selection
-$(fileButton).change(function(e){
-    // Get file
+$(fileButton).change(function (e) {
     var file = e.target.files[0];
-
-    // Create a storage ref
-    var storageRef = firebase.storage().ref('images/' + file.name);
-
-    // Upload file
+    var storageRef = storage.ref('images/' + file.name);
     var task = storageRef.put(file);
 
     // Update the progress bar
     task.on('state_changed',
-        function progress(snapshot){
-        console.log('snapshot is: ', snapshot);
+        // State change events
+        function (snapshot) {
+            console.log('snapshot is: ', snapshot);
             var percentage = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             uploader.val(percentage);
         },
 
-        function error(err){
+        // Error during upload
+        function (err) {
 
         },
+        // Successful upload
+        function () {
+        var downloadURL = task.snapshot.downloadURL;
+        console.log('success and : ', task);
 
-        function complete(){
+        var imageRef = database.ref('users/' + user.uid + '/cuts');
+        cutsRef.push().set({
+            images:'test'
+        });
 
+        $(image).prepend('<img id="newImage" src="' + downloadURL + '" />')
         }
-
-        )
+    )
 });
+
+
+

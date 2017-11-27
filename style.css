@@ -4,4 +4,11 @@ body {
 
 input, div {
      margin: 6px 0;
- }
+}
+
+#newImage {
+    height: 200px;
+    width: 300px;
+    background-size: contain;
+
+}
