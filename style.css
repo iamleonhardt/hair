@@ -12,3 +12,7 @@ input, div {
     background-size: contain;
 
 }
+
+.cutDetails {
+    height: 20px;
+}

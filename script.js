@@ -1,4 +1,5 @@
 // Global Vars
+var currentCut;
 var file;
 var user;
 
@@ -25,6 +26,7 @@ var btnLogout = $("#btnLogout");
 
 var uploadElems = $("#uploadsContainer");
 var newCutButton = $("#newCutButton");
+var uploader = $("#uploader");
 var fileButton = $("#fileButton");
 var image = $("#image");
 
@@ -56,7 +58,7 @@ $(btnSignUp).click(function () {
     // Sign in
     var promise = auth.createUserWithEmailAndPassword(email, password);
     promise
-        .then(function(firebaseUser){
+        .then(function (firebaseUser) {
             console.log('signed up and user is : ', firebaseUser);
             var userIDRef = database.ref('users/' + firebaseUser.uid)
             userIDRef.set({
@@ -81,6 +83,7 @@ firebase.auth().onAuthStateChanged(function (firebaseUser) {
         user = firebaseUser;
         showLoginElems(false);
         showUploadElems(true);
+        displayCuts();
     } else {
         $('#statusMsg').text('Please Log in');
         console.log('Not logged in');
@@ -117,10 +120,13 @@ function showUploadElems(showUploadFlag) {
 }
 
 // Create new cut entry
-$(newCutButton).click(function(){
+$(newCutButton).click(function () {
     console.log('new cut clicked');
-    var cutsRef = database.ref('users/' + user.uid + '/cuts');
-    cutsRef.push().set({images:'test'})
+    var cutsRef = database.ref('users/' + user.uid + '/cuts').push();
+    var key = cutsRef.key;
+    console.log('key is : ', key);
+    cutsRef.set({images: 'test'});
+    currentCut = key;
 });
 
 // Listen for file selection
@@ -144,18 +150,41 @@ $(fileButton).change(function (e) {
         },
         // Successful upload
         function () {
-        var downloadURL = task.snapshot.downloadURL;
-        console.log('success and : ', task);
+            var downloadURL = task.snapshot.downloadURL;
+            console.log('success and : ', task);
 
-        var imageRef = database.ref('users/' + user.uid + '/cuts');
-        cutsRef.push().set({
-            images:'test'
-        });
+            var imageRef = database.ref('users/' + user.uid + '/cuts/' + currentCut + '/images');
+            imageRef.push().set(
+                downloadURL
+            );
 
-        $(image).prepend('<img id="newImage" src="' + downloadURL + '" />')
+            $(image).prepend('<img id="newImage" src="' + downloadURL + '" />')
         }
     )
 });
 
+
+// Add all cuts to page
+function displayCuts() {
+    var cutsRef = database.ref('users/' + user.uid + '/cuts/')
+    cutsRef.once('value', function (snapshot) {
+        snapshot.forEach(function (childSnapshot) {
+            console.log('childSnapshot is: ', childSnapshot);
+            // var imageRef = database.ref('users/' + user.uid + '/cuts/' + childSnapshot.key + '/images')
+            // imageRef.forEach(function(imagesSnapshot){
+            //     console.log('imagesSnapshot is : ', imagesSnapshot);
+            //     $(image).prepend('<img id="newImage" src="' + imagesSnapshot + '" />')
+            // });
+
+            $(image).prepend($('<div>', {
+                    class: "cutDetails",
+                    text: childSnapshot.key
+                })
+            );
+
+            // console.log('childSnapshot is: ', childSnapshot.key);
+        })
+    })
+}
 
 
